@@ -1,0 +1,66 @@
+<html>
+<head>
+	<title>Cycles Benchmarks</title>
+	<style type="text/css">
+		body               { margin: 40px auto;
+		                     max-width: 900px;
+		                     line-height: 1.6;
+		                     font-family: Arial;
+		                     background-color: #eee;
+		                     font-size: 14px;
+		                     color: #333;
+		                     padding: 0 10px; }
+		h1, h2, h3         { line-height: 1.2 }
+		h2                 { color: #555; }
+		#revision-title    { background-color: #ddd;
+		                     padding: 10px;
+		                     margin: 2px;
+		                     cursor: pointer;
+		                     outline: none;
+		                     font-size: 1em; }
+		.tooltip           { padding: 8px;
+		                     font-family: arial; }
+		table              { background-color: #fff;
+		                     border: 1px solid #ccc;
+		                     width: 100%;
+		                     font-size: 0.8em;
+		                     border-spacing: 0; }
+		td                 { padding: 5px; }
+		tr:nth-child(even) { background-color: #eee;
+		                     margin: 0; }
+		tr:nth-child(odd)  { background-color: #fff;
+		                     margin: 0; }
+		a                  { text-decoration: none; color: #06b; }
+	</style>
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+	<script type="text/javascript" src='charts.js'></script>
+</head>
+<body>
+	<h1>Cycles Benchmarks</h1>
+	<h2>Master</h2>
+	<div id="master-charts">
+		...
+	</div>
+	<h2>Differential Revisions</h2>
+	<div id="diff-charts">
+		...
+	</div>
+	<h2>Local Tags</h2>
+	<div id="tag-charts">
+		...
+	</div>
+	<h2>Details</h2>
+	<div>
+		<p>Each scene is rendered 5 times, with AA samples set for about 60s render time.</p>
+		<ul>
+		<li>Master plots over time show the median render time, overlayed over the standard deviation.</li>
+		<li>Differential revisions show all runs, for the commits before and after the change. Times are plotted in % relative to the median of the before runs.</li>
+		<li>Local tags are plotted the same way as differential revisions, and compare two or more tags in a local git repository.</li>
+		<li>Click or hover data points to see more details for each.</li>
+		</ul>
+		</p>
+
+		<p>GPU render times are very stable. However for CPU renders there is currently significant noise in the timings that makes it hard to draw conclusions besides overall trends.</p>
+	</div>
+</body>

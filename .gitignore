@@ -1,0 +1,14 @@
+.*
+__pycache__
+*.py[cod]
+*~
+*.swp
+*.swo
+*#
+
+blender
+build
+logs
+scenes
+www/images
+www/*.json
