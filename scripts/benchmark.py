@@ -8,8 +8,8 @@ import sys
 import util
 
 # update blender to specified revision
-def update_blender(revision):
-    update_filepath = os.path.join(config.logs_dir, 'update_' + revision + '.log')
+def update_blender(revision, log_dir):
+    update_filepath = os.path.join(log_dir, 'update_' + revision + '.log')
     update_log = open(update_filepath, 'w')
 
     util.run(['git', 'clean', '-f', '-d'], update_log, config.blender_dir)
@@ -33,17 +33,14 @@ def update_blender(revision):
     util.run(['git', 'checkout', revision], update_log, config.blender_dir)
 
     update_log.close()
-    return update_filepath
 
 # build blender
-def build_blender(revision):
-    build_filepath = os.path.join(config.logs_dir, 'build_' + revision + '.log')
+def build_blender(revision, log_dir):
+    build_filepath = os.path.join(log_dir, 'build_' + revision + '.log')
     build_log = open(build_filepath, "w")
     util.run(['cmake', config.blender_dir], build_log, config.build_dir)
     util.run(['make', '-j8', 'install'], build_log, config.build_dir)
     build_log.close()
-
-    return build_filepath
 
 # write description.log
 def write_description(work_dir):
@@ -58,10 +55,17 @@ def write_complete(log_dir):
     complete_log.write('complete')
     complete_log.close()
 
-# test if build is complete
-def is_complete(revision, device):
+# write failed.log
+def write_failed(log_dir):
+    failed_log = open(os.path.join(log_dir, 'failed.log'), "w")
+    failed_log.write('failed')
+    failed_log.close()
+
+# test if build is complete or failed
+def is_done(revision, device):
     log_dir = os.path.join(config.logs_dir, revision, device['id'])
-    return os.path.isfile(os.path.join(log_dir, 'complete.log'))
+    return os.path.isfile(os.path.join(log_dir, 'complete.log')) or \
+           os.path.isfile(os.path.join(log_dir, 'failed.log'))
 
 # clear log files from previous run
 def clear_logs(log_dir):
@@ -72,7 +76,7 @@ def clear_logs(log_dir):
                 os.remove(filepath)
 
 # create log directory and temporary working directory
-def create_work_dir(revision, device, update_filepath):
+def create_work_dir(revision, device):
     log_dir = os.path.join(config.logs_dir, revision, device['id'])
     os.makedirs(log_dir, exist_ok=True)
 
@@ -128,36 +132,32 @@ def execute(revision, force=False):
     # run benchmarks for each device
     for device in config.devices:
         # test if we already completed this
-        if not force and is_complete(revision, device):
+        if not force and is_done(revision, device):
             continue
+
+        # create work directory
+        log_dir, work_dir = create_work_dir(revision, device)
 
         try:
             # update and build only if needed
             if not built:
-                update_log = update_blender(revision)
-                build_log = build_blender(revision)
+                update_blender(revision, log_dir)
+                build_blender(revision, log_dir)
                 built = True
-
-            # create work directory
-            log_dir, work_dir = create_work_dir(revision, device, update_log)
-
-            # copy update and build logs into each work directory
-            write_description(work_dir)
-            shutil.copy(update_log, os.path.join(work_dir, 'update.log'))
-            shutil.copy(build_log, os.path.join(work_dir, 'build.log'))
-
-            benchmark(work_dir, device)
-            cleanup_work_dir(log_dir, work_dir)
         except util.RunException as e:
-            pass
+            write_failed(log_dir)
+            continue
 
+        write_description(work_dir)
+
+        try:
+            benchmark(work_dir, device)
+        except util.RunException as e:
+            write_failed(log_dir)
+            continue
+
+        cleanup_work_dir(log_dir, work_dir)
         write_complete(log_dir)
-
-    # remove temporary update and build logs
-    if update_log:
-        os.remove(update_log)
-    if build_log:
-        os.remove(build_log)
 
 # fetch tags from local remote and create corresponding directories
 def update_local_tags():
