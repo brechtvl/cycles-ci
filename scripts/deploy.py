@@ -49,12 +49,20 @@ def revision_is_diff(revision):
 # commit dates are not chronological due to merge/rebase, so we sort
 # the revisions following the order in the master branch
 def sort_master_revisions(revision_map):
-    result = util.parse(['git', 'log', 'master', '--format=%h', '--', 'intern/cycles'], config.blender_dir)
+    result = util.parse(['git', 'log', 'master', '--format=%h %at', '--', 'intern/cycles'], config.blender_dir)
 
     sorted_revisions = []
     for line in reversed(result.split('\n')):
-        if line in revision_map:
-            sorted_revisions += [revision_map[line]]
+        revision, date = line.split(' ')
+        if revision in revision_map:
+            sorted_revisions += [[revision_map[revision], int(date)]]
+
+    # fudge dates to have a proper order, git commit dates are not ordered
+    for j in range(0, 10):
+        modified = False
+
+        for i in range(1, len(sorted_revisions) - 1):
+            sorted_revisions[i][1] = (sorted_revisions[i-1][1] + sorted_revisions[i+1][1]) // 2
 
     return sorted_revisions
 
@@ -82,7 +90,7 @@ def export_master():
         # JSON data layout is like a spreadsheat table, with colums, rows and cells
         # create one column for revision labels, and one column for each scene
         cols = []
-        cols += [{'id': '', 'label': 'revision', 'type': 'string'}]
+        cols += [{'id': '', 'label': 'revision', 'type': 'date'}]
         for scene in sorted(config.scenes.keys()):
             cols += [{'id': '', 'label': scene, 'type': 'number'}]
             cols += [{'id': '', 'label': None, 'role': 'tooltip', 'type': 'string', 'p': {'html': True}}]
@@ -108,23 +116,13 @@ def export_master():
         commits = []
         images = []
         last_revision = ''
-        last_date = 0
 
-        for revision in sort_master_revisions(revision_map):
+        for revision, fake_date in sort_master_revisions(revision_map):
             log_dir = os.path.join(config.logs_dir, revision, device['id'])
             date = revision_date(revision)
 
             # get all revisions between last and current data point
             revisions = revisions_list(last_revision, revision)
-
-            # fudge dates to have a proper order, git commit dates are not ordered
-            if date < last_date:
-                for rev in revisions:
-                    if rev['date'] > last_date:
-                        date = rev['date']
-                if date < last_date:
-                    date = last_date + 1
-            last_date = date
 
             # create tooltip
             subject = util.parse(['git', 'log', '-n1', '--format=%s', revision], config.blender_dir)
@@ -152,7 +150,7 @@ def export_master():
 
             if sum(log_times) != 0.0:
                 # create row
-                row = [{'f': None, 'v': revision}] #'Date({0})'.format(date * 1000)}]
+                row = [{'f': None, 'v': 'Date({0})'.format(fake_date * 1000)}]
                 for time, variance in zip(log_times, log_variance):
                     row += [{'f': None, 'v': time}]
                     row += [{'f': None, 'v': (tooltip_start % time) + tooltip_end}]
