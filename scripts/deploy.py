@@ -9,31 +9,32 @@ import shutil
 import statistics
 import util
 
-# parse time from logs
-def parse_time(log_filepath):
-    if not os.path.isfile(log_filepath):
-        return 0.0
-
-    log_file = open(log_filepath, 'r')
-    for line in log_file.readlines():
-        label = "Total render time: "
-        if line.find(label) != -1:
-            time = line[line.find(label) + len(label):]
-            return float(time.strip())
-
-    return 0.0
-
-# find scene times
-def parse_times(log_dir, scene):
-    scene_times =[]
+# parse time and memory from logs
+def parse_logs(log_dir, scene):
+    times = []
+    mems = []
 
     for run in range(1, config.max_runs):
         log_filepath = os.path.join(log_dir, scene + '_run' + str(run) + '.log')
-        time = parse_time(log_filepath)
-        if time != 0.0:
-            scene_times += [time]
 
-    return scene_times
+        if not os.path.isfile(log_filepath):
+            continue
+
+        log_file = open(log_filepath, 'r')
+
+        for line in log_file.readlines():
+            label = "Total render time: "
+            if line.find(label) != -1:
+                token = line[line.find(label) + len(label):]
+                times += [float(token.strip())]
+             
+            label = "Peak: "
+            if line.find(label) != -1:
+                token = line.strip().split(' ')[1]
+                token = token.replace(',', '')
+                mems += [float(token) / (1024.0 * 1024.0)]
+
+    return times, mems
 
 # get name from revision number
 def revision_date(revision):
@@ -126,22 +127,24 @@ def export_master():
 
             # create tooltip
             subject = util.parse(['git', 'log', '-n1', '--format=%s', revision], config.blender_dir)
-            tooltip_start = '<div class="tooltip"><b>%.2fs</b><br/>'
-            tooltip_end = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%d') + '<br/>'
-            tooltip_end += '<b>' + revision + '</b> ' + subject[:60] + '<br/>'
+            tooltip_start = '<div class="tooltip">Time: <b>%.2fs</b><br/>Peak: %.2fMB<br/>'
+            tooltip_end = 'Date: ' + datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%d') + '<br/>'
+            tooltip_end += 'Revision: <b>' + revision + '</b> ' + subject[:60] + '<br/>'
             if len(revisions) > 1:
                 tooltip_end += '<i>(%d commits, click point for details)</i><br/>' % len(revisions)
             last_revision = revision
 
             # find lowest render time for each scene
             log_times = []
+            log_mems = []
             log_variance = []
             row_images = []
             for scene in sorted(config.scenes.keys()):
-                scene_times = parse_times(log_dir, scene)
+                scene_times, scene_mems = parse_logs(log_dir, scene)
 
                 if len(scene_times):
                     log_times += [statistics.median(scene_times)]
+                    log_mems += [statistics.median(scene_mems)]
                     log_variance += [statistics.stdev(scene_times) if len(scene_times) > 1 else 0.0]
 
                     imagepath = image.get_filepath(log_dir, scene)
@@ -151,9 +154,9 @@ def export_master():
             if sum(log_times) != 0.0:
                 # create row
                 row = [{'f': None, 'v': 'Date({0})'.format(fake_date * 1000)}]
-                for time, variance in zip(log_times, log_variance):
+                for time, mem, variance in zip(log_times, log_mems, log_variance):
                     row += [{'f': None, 'v': time}]
-                    row += [{'f': None, 'v': (tooltip_start % time) + tooltip_end}]
+                    row += [{'f': None, 'v': (tooltip_start % (time, mem)) + tooltip_end}]
                     row += [{'f': None, 'v': time - variance}]
                     row += [{'f': None, 'v': time + variance}]
 
@@ -179,7 +182,7 @@ def export_comparisons(revision_groups, json_filename):
     for name, revisions in reversed(sorted(revision_groups.items())):
         data_devices = []
         description = ''
-        tooltip = '<div class="tooltip">%s<br/><b>%.2fs</b><br/>%.1f%%</div>'
+        tooltip = '<div class="tooltip">%s<br/>Time: <b>%.2fs</b><br/>Peak: %.2fM<br/>Diff: %.1f%%</div>'
 
         # one graph for each device
         for device in config.devices:
@@ -196,7 +199,7 @@ def export_comparisons(revision_groups, json_filename):
 
             # create labels and description
             if revision_is_diff(revisions[0]) and len(revisions) == 2:
-                revision_labels = ['before', 'after']
+                revision_labels = ['Before', 'After']
 
                 description_filepath = os.path.join(revision_dirs[1], 'description.log')
                 if os.path.exists(description_filepath):
@@ -227,11 +230,13 @@ def export_comparisons(revision_groups, json_filename):
 
             for scene in sorted(config.scenes.keys()):
                 revision_times = []
+                revision_mems = []
                 num_times = 0
                 for revision_dir in revision_dirs:
-                    times = parse_times(revision_dir, scene)
+                    times, mems = parse_logs(revision_dir, scene)
                     num_times = max(num_times, len(times))
                     revision_times += [times]
+                    revision_mems += [mems]
 
                 if num_times:
                     revision_images = []
@@ -244,12 +249,13 @@ def export_comparisons(revision_groups, json_filename):
 
                     row = [{'f': None, 'v': scene}]
                     row_images = []
-                    for label, times, imagename in zip(revision_labels, revision_times, revision_images):
+                    for label, times, mems, imagename in zip(revision_labels, revision_times, revision_mems, revision_images):
                         median = statistics.median(times) if len(times) else ref_median
+                        mem = statistics.median(mems) if len(mems) else 0
 
                         t = median / ref_median - 1.0
                         row += [{'f': None, 'v': t}]
-                        row += [{'f': None, 'v': tooltip % (label, median, t * 100)}]
+                        row += [{'f': None, 'v': tooltip % (label, median, mem, t * 100)}]
 
                         for run in range(0, num_runs):
                             if run < len(times):
