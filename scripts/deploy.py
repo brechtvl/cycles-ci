@@ -23,7 +23,7 @@ def parse_logs(log_dir, scene):
         log_file = open(log_filepath, 'r')
 
         for line in log_file.readlines():
-            label = "Total render time: "
+            label = "Render time (without synchronization): "
             if line.find(label) != -1:
                 token = line[line.find(label) + len(label):]
                 times += [float(token.strip())]
@@ -144,7 +144,7 @@ def export_master():
 
                 if len(scene_times):
                     log_times += [statistics.median(scene_times)]
-                    log_mems += [statistics.median(scene_mems)]
+                    log_mems += [statistics.median(scene_mems) if len(scene_mems) > 1 else 0]
                     log_variance += [statistics.stdev(scene_times) if len(scene_times) > 1 else 0.0]
 
                     imagepath = image.get_filepath(log_dir, scene)
