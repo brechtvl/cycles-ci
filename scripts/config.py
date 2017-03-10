@@ -41,7 +41,6 @@ max_runs = 6
 
 # logs
 logs_dir = os.path.join(ci_dir, 'logs')
-use_tmp_dir = False
 
 # website
 www_dir = os.path.join(ci_dir, 'www')

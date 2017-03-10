@@ -43,8 +43,8 @@ def build_blender(revision, log_dir):
     build_log.close()
 
 # write description.log
-def write_description(work_dir):
-    description_log = open(os.path.join(work_dir, 'description.log'), "w")
+def write_description(log_dir):
+    description_log = open(os.path.join(log_dir, 'description.log'), "w")
     subject =  util.parse(['git', 'log', '-n1', '--format=%s'], config.blender_dir)
     description_log.write(subject)
     description_log.close()
@@ -67,44 +67,24 @@ def is_done(revision, device):
     return os.path.isfile(os.path.join(log_dir, 'complete.log')) or \
            os.path.isfile(os.path.join(log_dir, 'failed.log'))
 
-# clear log files from previous run
-def clear_logs(log_dir):
-    for f in os.listdir(log_dir):
-        filepath = os.path.join(log_dir, f)
-        if f.endswith('.log') or f.endswith('.png'):
-            if os.path.isfile(filepath):
-                os.remove(filepath)
-
-# create log directory and temporary working directory
-def create_work_dir(revision, device):
+# create log directory
+def create_log_dir(revision, device):
     log_dir = os.path.join(config.logs_dir, revision, device['id'])
     os.makedirs(log_dir, exist_ok=True)
 
-    if config.use_tmp_dir:
-        work_dir = os.path.join(log_dir, 'work')
-        if os.path.exists(work_dir):
-            shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
-    else:
-        clear_logs(log_dir)
-        work_dir = log_dir
-
-    return log_dir, work_dir
+    return log_dir
  
-# move files from temporary working to final log directory
-def cleanup_work_dir(work_dir, log_dir):
-    if config.use_tmp_dir:
-        clear_logs(log_dir)
-        for f in os.listdir(work_dir):
-            shutil.move(os.path.join(work_dir, f), os.path.join(log_dir, f))
-        shutil.rmtree(work_dir)
-
 # run benchmarks for each scene
-def benchmark(work_dir, device):
+def benchmark(log_dir, device):
     for run in range(0, config.runs):
         for scene, filename in sorted(config.scenes.items()):
-            image = os.path.join(work_dir, scene + '_')
+            image = os.path.join(log_dir, scene + '_')
             image_ext = image + '0001.png'
+
+            scene_log_filepath = os.path.join(log_dir, scene + '_run' + str(run) + '.log')
+            if os.path.exists(image_ext) and os.path.exists(scene_log_filepath):
+                continue
+
             cmd = [config.blender_exe, '--debug-cycles', '-b', filename,
                    '-P', os.path.join(config.scripts_dir, 'blender_setup.py'),
                    '-o', image, '-F', 'PNG', '-x', '1', '-f', '1',
@@ -113,9 +93,8 @@ def benchmark(work_dir, device):
             if os.path.exists(image_ext):
                 os.remove(image_ext)
 
-            scene_log_filepath = os.path.join(work_dir, scene + '_run' + str(run) + '.log')
             scene_log = open(scene_log_filepath, "w")
-            util.run(cmd, scene_log, work_dir)
+            util.run(cmd, scene_log, log_dir)
             scene_log.close()
 
             if not os.path.exists(image_ext):
@@ -136,7 +115,7 @@ def execute(revision, force=False):
             continue
 
         # create work directory
-        log_dir, work_dir = create_work_dir(revision, device)
+        log_dir = create_log_dir(revision, device)
 
         try:
             # update and build only if needed
@@ -148,15 +127,14 @@ def execute(revision, force=False):
             write_failed(log_dir)
             continue
 
-        write_description(work_dir)
+        write_description(log_dir)
 
         try:
-            benchmark(work_dir, device)
+            benchmark(log_dir, device)
         except util.RunException as e:
             write_failed(log_dir)
             continue
 
-        cleanup_work_dir(log_dir, work_dir)
         write_complete(log_dir)
 
 # fetch tags from local remote and create corresponding directories
