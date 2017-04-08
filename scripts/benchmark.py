@@ -76,7 +76,7 @@ def create_log_dir(revision, device):
  
 # run benchmarks for each scene
 def benchmark(log_dir, device):
-    for run in range(0, config.runs):
+    for run in range(0, device['runs']):
         for scene, filename in sorted(config.scenes.items()):
             image = os.path.join(log_dir, scene + '_')
             image_ext = image + '0001.png'

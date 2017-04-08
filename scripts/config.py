@@ -3,9 +3,27 @@ import os
 
 # devices
 devices = [
-    {'id': 'intel_4790k', 'name': 'Intel i7-4790K', 'os': 'Ubuntu Linux', 'type': 'NONE', 'tile_size': 32, 'sample_factor': 1.0},
-    {'id': 'nvidia_gtx1080', 'name': 'NVidia GTX 1080', 'os': 'Ubuntu Linux', 'type': 'CUDA', 'tile_size': 256, 'sample_factor': 1.0},
-    {'id': 'amd_rx480', 'name': 'AMD Radeon RX 480', 'os': 'Ubuntu Linux', 'type': 'OPENCL', 'tile_size': 256, 'sample_factor': 1.0},
+    {'id': 'intel_4790k',
+     'name': 'Intel i7-4790K',
+     'os': 'Ubuntu Linux',
+     'type': 'NONE',
+     'tile_size': 32,
+     'sample_factor': 1.0,
+     'runs': 6},
+    #{'id': 'nvidia_gtx1080',
+     'name': 'NVidia GTX 1080',
+     'os': 'Ubuntu Linux',
+     'type': 'CUDA',
+     'tile_size': 256,
+     'sample_factor': 1.0,
+     'runs': 3},
+    {'id': 'amd_rx480',
+     'name': 'AMD Radeon RX 480',
+     'os': 'Ubuntu Linux',
+     'type': 'OPENCL',
+     'tile_size': 256,
+     'sample_factor': 1.0,
+     'runs': 3},
 ]
 
 # system configuration commands befor running server
@@ -34,10 +52,6 @@ for name in os.listdir(scenes_dir):
     filename = os.path.join(scenes_dir, name, name + '.blend')
     if os.path.isfile(filename):
         scenes[name] = filename
-
-# runs
-runs = 6
-max_runs = 6
 
 # logs
 logs_dir = os.path.join(ci_dir, 'logs')

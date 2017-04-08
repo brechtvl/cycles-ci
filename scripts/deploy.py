@@ -14,7 +14,7 @@ def parse_logs(log_dir, scene):
     times = []
     mems = []
 
-    for run in range(1, config.max_runs):
+    for run in range(1, 32):
         log_filepath = os.path.join(log_dir, scene + '_run' + str(run) + '.log')
 
         if not os.path.isfile(log_filepath):
@@ -177,7 +177,6 @@ def export_master():
 
 def export_comparisons(revision_groups, json_filename):
     data_diffs = []
-    num_runs = config.runs - 1
 
     for name, revisions in reversed(sorted(revision_groups.items())):
         data_devices = []
@@ -186,6 +185,8 @@ def export_comparisons(revision_groups, json_filename):
 
         # one graph for each device
         for device in config.devices:
+            num_runs = device['runs'] - 1
+
             # create revision directories list
             revision_dirs = []
 
