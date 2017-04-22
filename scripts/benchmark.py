@@ -82,7 +82,7 @@ def benchmark(log_dir, device):
             image_ext = image + '0001.png'
 
             scene_log_filepath = os.path.join(log_dir, scene + '_run' + str(run) + '.log')
-            if os.path.exists(image_ext) and os.path.exists(scene_log_filepath):
+            if os.path.exists(scene_log_filepath):
                 continue
 
             cmd = [config.blender_exe, '--debug-cycles', '-b', filename,
@@ -110,6 +110,9 @@ def execute(revision, force=False):
 
     # run benchmarks for each device
     for device in config.devices:
+        if not device['available']:
+            continue
+
         # test if we already completed this
         if not force and is_done(revision, device):
             continue

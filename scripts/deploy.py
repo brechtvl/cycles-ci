@@ -132,7 +132,6 @@ def export_master():
             tooltip_end += 'Revision: <b>' + revision + '</b> ' + subject[:60] + '<br/>'
             if len(revisions) > 1:
                 tooltip_end += '<i>(%d commits, click point for details)</i><br/>' % len(revisions)
-            last_revision = revision
 
             # find lowest render time for each scene
             log_times = []
@@ -163,6 +162,7 @@ def export_master():
                 rows += [{'c': row}]
                 commits += [revisions]
                 images += [row_images]
+                last_revision = revision
             else:
                 pass
 

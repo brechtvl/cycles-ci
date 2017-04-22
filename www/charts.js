@@ -64,7 +64,7 @@ function draw_master_charts()
 			title: device["name"],
 			//curveType: 'function',
 			chartArea: {'height': '75%'},
-			vAxis: {title: "Render Time", minorGridlines: {count: 3}, format:'#s'},
+			vAxis: {title: "Render Time", minorGridlines: {count: 3}, format:'#s', minValue: 0},
 			pointsVisible: true,
 			pointSize: 2.5,
 			tooltip: { isHtml: true },
