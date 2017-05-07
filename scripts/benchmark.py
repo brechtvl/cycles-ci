@@ -14,8 +14,7 @@ def update_blender(revision, log_dir):
 
     util.run(['git', 'clean', '-f', '-d'], update_log, config.blender_dir)
     util.run(['git', 'reset', '--hard', 'HEAD'], update_log, config.blender_dir)
-    util.run(['git', 'checkout', 'master'], update_log, config.blender_dir)
-    util.run(['git', 'pull', 'origin', 'master'], update_log, config.blender_dir)
+    util.run(['git', 'fetch', 'origin', 'master:master'], update_log, config.blender_dir)
 
     if revision.startswith('D'):
         before = revision.endswith("~1")
@@ -142,11 +141,21 @@ def execute(revision, force=False):
 
 # fetch tags from local remote and create corresponding directories
 def update_local_tags():
+    # delete tags
+    tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
+    for tag in tags:
+        tag = tag.strip()
+
+        if tag.startswith('ci-'):
+            util.run(['git', 'tag', '-d', tag], cwd=config.blender_dir)
+
+    # fetch tags
     try:
         util.run(['git', 'fetch', '--tags', 'local'], cwd=config.blender_dir)
     except util.RunException as e:
         return
 
+    # detect tags
     tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
     for tag in tags:
         tag = tag.strip()

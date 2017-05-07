@@ -26,7 +26,7 @@ devices = [
      'tile_size': 256,
      'sample_factor': 1.0,
      'runs': 3,
-     'available': False},
+     'available': True},
 ]
 
 # system configuration commands befor running server

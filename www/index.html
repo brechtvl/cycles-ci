@@ -52,7 +52,7 @@
 	</div>
 	<h2>Details</h2>
 	<div>
-		<p>Each scene is rendered 5 times, with AA samples set for about 60s render time.</p>
+		<p>Each scene is rendered 5 times, with original AA samples set for about 60s render time.</p>
 		<ul>
 		<li>Master plots over time show the median render time, overlayed over the standard deviation.</li>
 		<li>Differential revisions show all runs, for the commits before and after the change. Times are plotted in % relative to the median of the before runs.</li>
@@ -61,7 +61,7 @@
 		</ul>
 		</p>
 
-		<p>GPU render times are very stable. However for CPU renders there is currently significant noise in the timings that makes it hard to draw conclusions besides overall trends.</p>
+		<p>GPU render times are very stable. However for CPU renders there is significant timing noise, so individual data points should not be given too much importance.</p>
 
 		<p><a href="https://github.com/brechtvl/cycles-ci">Source code on GitHub</a></p>
 	</div>
