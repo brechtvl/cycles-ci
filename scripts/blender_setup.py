@@ -1,6 +1,7 @@
 
 import bpy
 import math
+import os
 import sys
 
 argv = sys.argv[sys.argv.index("--") + 1:]
@@ -39,11 +40,7 @@ else:
     scene.cycles.device = 'GPU'
 
 def adjust_samples(samples):
-    if scene.cycles.use_square_samples:
-        new_samples = math.sqrt(samples * samples * sample_factor)
-    else:
-        new_samples = samples * sample_factor
-
+    new_samples = samples * sample_factor
     return max(1, int(new_samples + 0.5))
 
 scene.cycles.samples = adjust_samples(scene.cycles.samples)

@@ -34,18 +34,24 @@ while 1:
 
     benchmark.update_local_tags()
 
-    priority_revisions = []
+    ci_ref_revisions = []
+    ci_revisions = []
     revisions = []
 
     for revision in sorted(os.listdir(config.logs_dir)):
         log_dir = os.path.join(config.logs_dir, revision)
         if os.path.isdir(log_dir):
             if revision.startswith('ci-'):
-                priority_revisions += [revision]
+                if revision.endswith('-ref'):
+                    ci_ref_revisions += [revision]
+                else:
+                    ci_revisions += [revision]
             else:
                 revisions += [revision]
 
-    for revision in priority_revisions + revisions:
+    # benchmark in this order to make equal time comparisons work
+    all_revisions = ci_ref_revisions + ci_revisions + revisions
+    for revision in all_revisions:
         benchmark.execute(revision)
 
     time.sleep(10)

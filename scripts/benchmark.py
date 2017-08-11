@@ -4,6 +4,7 @@ import config
 import deploy
 import os
 import shutil
+import statistics
 import sys
 import util
 
@@ -73,8 +74,35 @@ def create_log_dir(revision, device):
 
     return log_dir
  
+# get median render time for equal time renders
+def get_median_render_time(log_dir, scene):
+    times, mems = deploy.parse_logs(log_dir, scene)
+
+    if not len(times):
+        return None
+
+    return statistics.median(times)
+
+# get sample factor for equal time renders
+def compute_sample_factor(revision, device, scene):
+    if not revision.endswith('-eqtime'):
+        return 1.0
+
+    new_revision = revision[:-len('-eqtime')]
+    new_log_dir = os.path.join(config.logs_dir, new_revision, device['id'])
+    new_time = get_median_render_time(new_log_dir, scene)
+
+    ref_revision = '-'.join(revision.split('-')[:2]) + '-ref'
+    ref_log_dir = os.path.join(config.logs_dir, ref_revision, device['id'])
+    ref_time = get_median_render_time(ref_log_dir, scene)
+
+    if not ref_time or not new_time:
+        return 0.0
+
+    return ref_time / new_time
+
 # run benchmarks for each scene
-def benchmark(log_dir, device):
+def benchmark(revision, log_dir, device):
     for run in range(0, device['runs']):
         for scene, filename in sorted(config.scenes.items()):
             image = os.path.join(log_dir, scene + '_')
@@ -84,10 +112,13 @@ def benchmark(log_dir, device):
             if os.path.exists(scene_log_filepath):
                 continue
 
+            sample_factor = device['sample_factor']
+            sample_factor *= compute_sample_factor(revision, device, scene)
+
             cmd = [config.blender_exe, '--debug-cycles', '-b', filename,
                    '-P', os.path.join(config.scripts_dir, 'blender_setup.py'),
                    '-o', image, '-F', 'PNG', '-x', '1', '-f', '1',
-                   '--', device['type'], str(device['tile_size']), str(device['sample_factor'])]
+                   '--', device['type'], str(device['tile_size']), str(sample_factor)]
 
             if os.path.exists(image_ext):
                 os.remove(image_ext)
@@ -98,6 +129,10 @@ def benchmark(log_dir, device):
 
             if not os.path.exists(image_ext):
                 os.remove(scene_log_filepath)
+
+            cache_filepath = os.path.join(log_dir, scene + '.cache')
+            if os.path.exists(cache_filepath):
+                os.remove(cache_filepath)
 
         deploy.export_all()
 
@@ -132,7 +167,7 @@ def execute(revision, force=False):
         write_description(log_dir)
 
         try:
-            benchmark(log_dir, device)
+            benchmark(revision, log_dir, device)
         except util.RunException as e:
             write_failed(log_dir)
             continue

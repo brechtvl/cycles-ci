@@ -5,12 +5,18 @@ import datetime
 import image
 import json
 import os
+import pickle
 import shutil
 import statistics
 import util
 
 # parse time and memory from logs
 def parse_logs(log_dir, scene):
+    # use cached data for speed
+    cache_filepath = os.path.join(log_dir, scene + '.cache')
+    if os.path.isfile(cache_filepath):
+        return pickle.load(open(cache_filepath, "rb"))
+
     times = []
     mems = []
 
@@ -34,7 +40,10 @@ def parse_logs(log_dir, scene):
                 token = token.replace(',', '')
                 mems += [float(token) / (1024.0 * 1024.0)]
 
-    return times, mems
+    data = times, mems
+    pickle.dump(data, open(cache_filepath, "wb"))
+
+    return data
 
 # get name from revision number
 def revision_date(revision):

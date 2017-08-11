@@ -3,14 +3,6 @@ import os
 
 # devices
 devices = [
-    {'id': 'intel_4790k',
-     'name': 'Intel i7-4790K',
-     'os': 'Ubuntu Linux',
-     'type': 'NONE',
-     'tile_size': 32,
-     'sample_factor': 1.0,
-     'runs': 6,
-     'available': True},
     {'id': 'nvidia_gtx1080',
      'name': 'NVidia GTX 1080',
      'os': 'Ubuntu Linux',
@@ -18,7 +10,7 @@ devices = [
      'tile_size': 256,
      'sample_factor': 1.0,
      'runs': 3,
-     'available': False},
+     'available': True},
     {'id': 'amd_rx480',
      'name': 'AMD Radeon RX 480',
      'os': 'Ubuntu Linux',
@@ -26,7 +18,15 @@ devices = [
      'tile_size': 256,
      'sample_factor': 1.0,
      'runs': 3,
-     'available': True},
+     'available': False},
+    {'id': 'intel_4790k',
+     'name': 'Intel i7-4790K',
+     'os': 'Ubuntu Linux',
+     'type': 'NONE',
+     'tile_size': 32,
+     'sample_factor': 1.0,
+     'runs': 6,
+     'available': False},
 ]
 
 # system configuration commands befor running server
@@ -51,7 +51,8 @@ blender_exe = os.path.join(build_dir, 'bin', 'blender')
 # scenes
 scenes_dir = os.path.join(ci_dir, 'scenes')
 scenes = {}
-for name in os.listdir(scenes_dir):
+names = os.listdir(scenes_dir)
+for name in names:
     filename = os.path.join(scenes_dir, name, name + '.blend')
     if os.path.isfile(filename):
         scenes[name] = filename
