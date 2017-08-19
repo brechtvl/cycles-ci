@@ -25,7 +25,7 @@ mkdir logs/abc1234
 mkdir logs/D1234
 ```
 
-Browse http://localhost:8000 to see results.
+Browse http://localhost:4000 to see results.
 
 ### Local Tags
 

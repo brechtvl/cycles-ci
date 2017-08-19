@@ -15,7 +15,7 @@ def run_httpd(httpd):
 
 os.chdir(config.www_dir)
 handler = http.server.SimpleHTTPRequestHandler
-httpd = socketserver.TCPServer(("", 8000), handler)
+httpd = socketserver.TCPServer(("", 4000), handler)
 
 thread = threading.Thread(target=run_httpd, args=(httpd,))
 thread.daemon = True
