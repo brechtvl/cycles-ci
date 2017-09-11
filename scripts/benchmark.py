@@ -136,7 +136,7 @@ def benchmark(revision, log_dir, device):
 
         deploy.export_all()
 
-def execute(revision, force=False):
+def execute(revisions, force=False):
     # update
     update_log = None
     build_log = None
@@ -147,38 +147,39 @@ def execute(revision, force=False):
         if not device['available']:
             continue
 
-        # test if we already completed this
-        if not force and is_done(revision, device):
-            continue
+        for revision in revisions:
+            # test if we already completed this
+            if not force and is_done(revision, device):
+                continue
 
-        # create work directory
-        log_dir = create_log_dir(revision, device)
+            # create work directory
+            log_dir = create_log_dir(revision, device)
 
-        try:
-            # update and build only if needed
-            if not built:
-                update_blender(revision, log_dir)
-                build_blender(revision, log_dir)
-                built = True
-        except util.RunException as e:
-            write_failed(log_dir)
-            continue
+            try:
+                # update and build only if needed
+                if not built:
+                    update_blender(revision, log_dir)
+                    build_blender(revision, log_dir)
+                    built = True
+            except util.RunException as e:
+                write_failed(log_dir)
+                continue
 
-        write_description(log_dir)
+            write_description(log_dir)
 
-        try:
-            benchmark(revision, log_dir, device)
-        except util.RunException as e:
-            write_failed(log_dir)
-            continue
+            try:
+                benchmark(revision, log_dir, device)
+            except util.RunException as e:
+                write_failed(log_dir)
+                continue
 
-        write_complete(log_dir)
+            write_complete(log_dir)
 
 # fetch tags from local remote and create corresponding directories
 def update_local_tags():
     # delete tags
-    tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
-    for tag in tags:
+    old_tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
+    for tag in old_tags:
         tag = tag.strip()
 
         if tag.startswith('ci-'):
@@ -191,10 +192,14 @@ def update_local_tags():
         return
 
     # detect tags
-    tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
-    for tag in tags:
+    new_tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
+    for tag in new_tags:
         tag = tag.strip()
 
         if tag.startswith('ci-'):
             os.makedirs(os.path.join(config.logs_dir, tag), exist_ok=True)
 
+    # remove logs from deleted tags
+    for tag in old_tags:
+        if tag not in new_tags:
+            shutil.rmtree(os.path.join(config.logs_dir, tag))

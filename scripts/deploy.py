@@ -59,7 +59,7 @@ def revision_is_diff(revision):
 # commit dates are not chronological due to merge/rebase, so we sort
 # the revisions following the order in the master branch
 def sort_master_revisions(revision_map):
-    result = util.parse(['git', 'log', 'master', '--format=%h %at'], config.blender_dir)
+    result = util.parse(['git', 'log', '15fd758..master', '--format=%h %at'], config.blender_dir)
 
     sorted_revisions = []
     for line in reversed(result.split('\n')):

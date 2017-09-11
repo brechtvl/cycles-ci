@@ -25,14 +25,14 @@ devices = [
      'type': 'NONE',
      'tile_size': 32,
      'sample_factor': 1.0,
-     'runs': 6,
+     'runs': 3,
      'available': False},
 ]
 
 # system configuration commands befor running server
 system_config_commands = [
     # prompt once for SSH passphrase
-    "ssh-add ~/.ssh/id_rsa",
+    #"ssh-add ~/.ssh/id_rsa",
     # disable turboboost
     "echo \"1\" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo",
     # disable ASLR

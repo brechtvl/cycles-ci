@@ -29,7 +29,7 @@ def image_matches(filepath1, filepath2):
         return True
 
     try:
-        util.run(['oiiotool', '--diff', '--fail', '0.035', '--failpercent', '1', filepath1, filepath2])
+        util.run(['oiiotool', '--diff', '--fail', '0.001', '--failpercent', '1', filepath1, filepath2])
     except util.RunException as e:
         return False
 

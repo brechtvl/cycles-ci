@@ -51,8 +51,7 @@ while 1:
 
     # benchmark in this order to make equal time comparisons work
     all_revisions = ci_ref_revisions + ci_revisions + revisions
-    for revision in all_revisions:
-        benchmark.execute(revision)
+    benchmark.execute(all_revisions)
 
     time.sleep(10)
 
