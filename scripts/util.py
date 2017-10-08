@@ -19,7 +19,7 @@ def run(args, log=None, cwd=None, silent=False):
             if log:
                 line = line.decode('utf-8', 'ignore')
                 log.write(line)
-                sys.stdout.write(line)
+                #sys.stdout.write(line)
 
     if proc.returncode != 0 and not silent:
         if log:

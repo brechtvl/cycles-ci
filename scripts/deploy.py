@@ -86,9 +86,10 @@ def revisions_list(last, current):
     result = util.parse(['git', 'log', revision_range, '--format=%h %at %s', '--', 'intern/cycles'], config.blender_dir)
     lines = []
     for line in result.split('\n'):
-        revision, _, rest = line.partition(' ')
-        date, _, subject = rest.partition(' ')
-        lines += [{'hash': revision, 'date': int(date), 'subject': subject}]
+        if len(line):
+            revision, _, rest = line.partition(' ')
+            date, _, subject = rest.partition(' ')
+            lines += [{'hash': revision, 'date': int(date), 'subject': subject}]
 
     return lines;
 
@@ -198,28 +199,30 @@ def export_comparisons(revision_groups, json_filename):
 
             # create revision directories list
             revision_dirs = []
+            ready_revisions = []
 
             for revision in revisions:
                 revision_dir = os.path.join(config.logs_dir, revision, device['id'])
                 if os.path.isdir(revision_dir):
                     revision_dirs += [revision_dir]
+                    ready_revisions += [revision]
 
-            if len(revision_dirs) != len(revisions):
+            if len(ready_revisions) == 0:
                 continue
 
             # create labels and description
-            if revision_is_diff(revisions[0]) and len(revisions) == 2:
+            if revision_is_diff(ready_revisions[0]) and len(ready_revisions) == 2:
                 revision_labels = ['Before', 'After']
 
                 description_filepath = os.path.join(revision_dirs[1], 'description.log')
                 if os.path.exists(description_filepath):
-                    date = revision_date(revisions[1])
+                    date = revision_date(ready_revisions[1])
                     contents = open(description_filepath, 'r').read()
                     description = contents.strip()
                     description += ' (' + datetime.datetime.fromtimestamp(date).strftime('%b %d %Y') + ')'
             else:
                 revision_labels = []
-                for revision in revisions:
+                for revision in ready_revisions:
                     revision_labels += [revision[len(name)+1:]]
                 description = ''
 

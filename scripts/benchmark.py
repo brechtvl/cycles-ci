@@ -140,7 +140,6 @@ def execute(revisions, force=False):
     # update
     update_log = None
     build_log = None
-    built = False
 
     # run benchmarks for each device
     for device in config.devices:
@@ -157,10 +156,8 @@ def execute(revisions, force=False):
 
             try:
                 # update and build only if needed
-                if not built:
-                    update_blender(revision, log_dir)
-                    build_blender(revision, log_dir)
-                    built = True
+                update_blender(revision, log_dir)
+                build_blender(revision, log_dir)
             except util.RunException as e:
                 write_failed(log_dir)
                 continue
@@ -174,6 +171,7 @@ def execute(revisions, force=False):
                 continue
 
             write_complete(log_dir)
+            break
 
 # fetch tags from local remote and create corresponding directories
 def update_local_tags():
@@ -202,4 +200,6 @@ def update_local_tags():
     # remove logs from deleted tags
     for tag in old_tags:
         if tag not in new_tags:
-            shutil.rmtree(os.path.join(config.logs_dir, tag))
+            tag_dir = os.path.join(config.logs_dir, tag)
+            if os.path.isdir(tag_dir):
+                shutil.rmtree(tag_dir)

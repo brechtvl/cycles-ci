@@ -46,7 +46,10 @@ def get_filepath(log_dir, scene):
 
         # find duplicates
         scene = image_scene(filepath)
-        others = list(glob.iglob(os.path.join(config.logs_dir, '*', '*', scene + '_*.png')))
+        if 'ci-' in log_dir:
+            others = list(glob.iglob(os.path.join(config.logs_dir, 'ci-*', '*', scene + '_*.png')))
+        else:
+            others = list(glob.iglob(os.path.join(config.logs_dir, '*', '*', scene + '_*.png')))
 
         for otherpath in others:
             if image_matches(filepath, otherpath):

@@ -10,11 +10,15 @@ import threading
 import time
 
 # start HTTP server
+class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
 def run_httpd(httpd):
     httpd.serve_forever()
 
 os.chdir(config.www_dir)
-handler = http.server.SimpleHTTPRequestHandler
+handler = HTTPRequestHandler
 httpd = socketserver.TCPServer(("", 4000), handler)
 
 thread = threading.Thread(target=run_httpd, args=(httpd,))
