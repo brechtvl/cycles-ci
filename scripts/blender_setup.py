@@ -26,7 +26,7 @@ try:
             devices = opencl_devices
 
         for device in devices:
-            device.use = True
+            device.use = device.type == device_type
 except:
     print("Cycles device not available")
     sys.exit(1)
