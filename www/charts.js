@@ -185,6 +185,34 @@ function draw_comparison_charts(json_filename, element_id)
 			parent_div.appendChild(elem);
 
 			google.visualization.events.addListener(chart, 'select', select_handler.bind(null, device, chart, elem, 1));
+
+			// print table to paste in phabricator
+			var table = "**" + device["name"] + "**\n";
+
+			cols = device["data"]["cols"]
+			rows = device["data"]["rows"]
+
+			for (var c = 0; c < cols.length; c++) {
+				var col = cols[c];
+				var label = col["label"]
+				if (!(label && label != "ref" && col["type"] == "number")) {
+					continue;
+				}
+
+				for (var r = 0; r < rows.length; r++) {
+					var row = rows[r]["c"];
+					var pct = Math.round(row[c]["v"] * 10000) / 100
+					table += "|" + row[0]["v"] + "|";
+					if (pct > 0.0) {
+						table += "+";
+					}
+					table += pct + "%|\n";
+				}
+			}
+
+			elem = document.createElement('pre');
+			elem.innerHTML = table;
+			parent_div.appendChild(elem);
 		}
 	}
 }
