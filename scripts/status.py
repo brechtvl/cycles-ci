@@ -2,11 +2,12 @@
 
 import benchmark
 import config
+import paths
 import os
 
 # test if build is complete or failed
 def is_done(revision, device):
-    log_dir = os.path.join(config.logs_dir, revision, device['id'])
+    log_dir = os.path.join(paths.logs_dir, revision, device['id'])
     return os.path.isfile(os.path.join(log_dir, 'complete.log')) or \
            os.path.isfile(os.path.join(log_dir, 'failed.log'))
 
@@ -17,11 +18,11 @@ ci_ref_revisions = []
 ci_revisions = []
 revisions = []
 
-for revision in sorted(os.listdir(config.logs_dir)):
-    log_dir = os.path.join(config.logs_dir, revision)
+for revision in sorted(os.listdir(paths.logs_dir)):
+    log_dir = os.path.join(paths.logs_dir, revision)
     if os.path.isdir(log_dir):
         if revision.startswith('ci-'):
-            if revision.endswith('-ref'):
+            if revision.endswith('-ref') or revision.endswith('-pre'):
                 ci_ref_revisions += [revision]
             else:
                 ci_revisions += [revision]

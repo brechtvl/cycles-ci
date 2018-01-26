@@ -1,7 +1,7 @@
 
-import config
 import glob
 import os
+import paths
 import util
 
 # rename to myimage_xxxsh1hashxxx.png
@@ -37,7 +37,7 @@ def image_matches(filepath1, filepath2):
 
 # put hash in filename and deduplicate
 def get_filepath(log_dir, scene):
-    os.makedirs(config.www_images_dir, exist_ok=True)
+    os.makedirs(paths.www_images_dir, exist_ok=True)
     filepath = os.path.join(log_dir, scene + '_0001.png')
 
     if os.path.exists(filepath):
@@ -47,9 +47,9 @@ def get_filepath(log_dir, scene):
         # find duplicates
         scene = image_scene(filepath)
         if 'ci-' in log_dir:
-            others = list(glob.iglob(os.path.join(config.logs_dir, 'ci-*', '*', scene + '_*.png')))
+            others = list(glob.iglob(os.path.join(paths.logs_dir, 'ci-*', '*', scene + '_*.png')))
         else:
-            others = list(glob.iglob(os.path.join(config.logs_dir, '*', '*', scene + '_*.png')))
+            others = list(glob.iglob(os.path.join(paths.logs_dir, '*', '*', scene + '_*.png')))
 
         for otherpath in others:
             if image_matches(filepath, otherpath):

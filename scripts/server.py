@@ -5,6 +5,7 @@ import config
 import http.server
 import importlib
 import os
+import paths
 import socketserver
 import threading
 import time
@@ -17,7 +18,7 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 def run_httpd(httpd):
     httpd.serve_forever()
 
-os.chdir(config.www_dir)
+os.chdir(paths.www_dir)
 handler = HTTPRequestHandler
 httpd = socketserver.TCPServer(("", 4000), handler)
 
@@ -29,7 +30,7 @@ thread.start()
 for command in config.system_config_commands:
     os.system(command)
 
-os.makedirs(config.logs_dir, exist_ok=True)
+os.makedirs(paths.logs_dir, exist_ok=True)
 
 # detect and execute benchmarks
 while 1:
@@ -42,8 +43,8 @@ while 1:
     ci_revisions = []
     revisions = []
 
-    for revision in sorted(os.listdir(config.logs_dir)):
-        log_dir = os.path.join(config.logs_dir, revision)
+    for revision in sorted(os.listdir(paths.logs_dir)):
+        log_dir = os.path.join(paths.logs_dir, revision)
         if os.path.isdir(log_dir):
             if revision.startswith('ci-'):
                 if revision.endswith('-ref'):

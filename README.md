@@ -15,9 +15,10 @@ mkdir build && cd build
 cmake ../blender
 ...
 
-# Edit configuration and run server
-vim scripts/config.py
-ssh-agent ./scripts/server.py
+# Add configuration and run server
+cp scripts/config.template.py scripts/config.py
+edit scripts/config.py
+./scripts/server.py
 
 # Create empty directories matching Git hashes or Differential revisions
 # to add to the list of revisions to benchmark.

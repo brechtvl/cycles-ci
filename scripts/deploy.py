@@ -5,6 +5,7 @@ import datetime
 import image
 import json
 import os
+import paths
 import pickle
 import shutil
 import statistics
@@ -20,7 +21,7 @@ def parse_logs(log_dir, scene):
     times = []
     mems = []
 
-    for run in range(1, 32):
+    for run in range(0, 32):
         log_filepath = os.path.join(log_dir, scene + '_run' + str(run) + '.log')
 
         if not os.path.isfile(log_filepath):
@@ -48,9 +49,9 @@ def parse_logs(log_dir, scene):
 # get name from revision number
 def revision_date(revision):
     if revision.startswith('D'):
-        return int(util.parse(['git', 'log', '-n1', 'arcpatch-' + revision, '--format=%at'], config.blender_dir))
+        return int(util.parse(['git', 'log', '-n1', 'arcpatch-' + revision, '--format=%at'], paths.blender_dir))
     else:
-        return int(util.parse(['git', 'log', '-n1', revision, '--format=%at'], config.blender_dir))
+        return int(util.parse(['git', 'log', '-n1', revision, '--format=%at'], paths.blender_dir))
 
 # is a differential revision
 def revision_is_diff(revision):
@@ -59,7 +60,7 @@ def revision_is_diff(revision):
 # commit dates are not chronological due to merge/rebase, so we sort
 # the revisions following the order in the master branch
 def sort_master_revisions(revision_map):
-    result = util.parse(['git', 'log', '15fd758..master', '--format=%h %at'], config.blender_dir)
+    result = util.parse(['git', 'log', '15fd758..master', '--format=%h %at'], paths.blender_dir)
 
     sorted_revisions = []
     for line in reversed(result.split('\n')):
@@ -83,7 +84,7 @@ def revisions_list(last, current):
     else:
         revision_range = last + '..' + current
 
-    result = util.parse(['git', 'log', revision_range, '--format=%h %at %s', '--', 'intern/cycles'], config.blender_dir)
+    result = util.parse(['git', 'log', revision_range, '--format=%h %at %s', '--', 'intern/cycles'], paths.blender_dir)
     lines = []
     for line in result.split('\n'):
         if len(line):
@@ -102,7 +103,7 @@ def export_master():
         # create one column for revision labels, and one column for each scene
         cols = []
         cols += [{'id': '', 'label': 'revision', 'type': 'date'}]
-        for scene in sorted(config.scenes.keys()):
+        for scene in sorted(paths.scenes.keys()):
             cols += [{'id': '', 'label': scene, 'type': 'number'}]
             cols += [{'id': '', 'label': None, 'role': 'tooltip', 'type': 'string', 'p': {'html': True}}]
             cols += [{'id': '', 'label': None, 'role': 'interval', 'type': 'number'}]
@@ -111,8 +112,8 @@ def export_master():
         # find master logs
         revision_map = {}
 
-        for revision in sorted(os.listdir(config.logs_dir)):
-            log_dir = os.path.join(config.logs_dir, revision, device['id'])
+        for revision in sorted(os.listdir(paths.logs_dir)):
+            log_dir = os.path.join(paths.logs_dir, revision, device['id'])
             if not os.path.isdir(log_dir):
                 continue
 
@@ -129,14 +130,14 @@ def export_master():
         last_revision = ''
 
         for revision, fake_date in sort_master_revisions(revision_map):
-            log_dir = os.path.join(config.logs_dir, revision, device['id'])
+            log_dir = os.path.join(paths.logs_dir, revision, device['id'])
             date = revision_date(revision)
 
             # get all revisions between last and current data point
             revisions = revisions_list(last_revision, revision)
 
             # create tooltip
-            subject = util.parse(['git', 'log', '-n1', '--format=%s', revision], config.blender_dir)
+            subject = util.parse(['git', 'log', '-n1', '--format=%s', revision], paths.blender_dir)
             tooltip_start = '<div class="tooltip">Time: <b>%.2fs</b><br/>Peak: %.2fMB<br/>'
             tooltip_end = 'Date: ' + datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%d') + '<br/>'
             tooltip_end += 'Revision: <b>' + revision + '</b> ' + subject[:60] + '<br/>'
@@ -148,7 +149,7 @@ def export_master():
             log_mems = []
             log_variance = []
             row_images = []
-            for scene in sorted(config.scenes.keys()):
+            for scene in sorted(paths.scenes.keys()):
                 scene_times, scene_mems = parse_logs(log_dir, scene)
 
                 if len(scene_times):
@@ -157,7 +158,7 @@ def export_master():
                     log_variance += [statistics.stdev(scene_times) if len(scene_times) > 1 else 0.0]
 
                     imagepath = image.get_filepath(log_dir, scene)
-                    imagename = image.copy_compressed(imagepath, config.www_images_dir)
+                    imagename = image.copy_compressed(imagepath, paths.www_images_dir)
                     row_images += [imagename]
 
             if sum(log_times) != 0.0:
@@ -180,7 +181,7 @@ def export_master():
         label = device['name'] + ', ' + device['os']
         data_devices += [{'id': device['id'], 'name': label, 'data': data, 'commits': commits, 'images': images}]
 
-    data_filepath = os.path.join(config.master_json)
+    data_filepath = os.path.join(paths.master_json)
     data_file = open(data_filepath, 'w')
     data_file.write(json.dumps(data_devices)) #, indent=2))
     data_file.close()
@@ -195,14 +196,14 @@ def export_comparisons(revision_groups, json_filename):
 
         # one graph for each device
         for device in config.devices:
-            num_runs = device['runs'] - 1
+            num_runs = device['runs']
 
             # create revision directories list
             revision_dirs = []
             ready_revisions = []
 
             for revision in revisions:
-                revision_dir = os.path.join(config.logs_dir, revision, device['id'])
+                revision_dir = os.path.join(paths.logs_dir, revision, device['id'])
                 if os.path.isdir(revision_dir):
                     revision_dirs += [revision_dir]
                     ready_revisions += [revision]
@@ -241,7 +242,7 @@ def export_comparisons(revision_groups, json_filename):
             rows = []
             images = []
 
-            for scene in sorted(config.scenes.keys()):
+            for scene in sorted(paths.scenes.keys()):
                 revision_times = []
                 revision_mems = []
                 num_times = 0
@@ -256,7 +257,7 @@ def export_comparisons(revision_groups, json_filename):
                     for revision_dir in revision_dirs:
                         imagepath = image.get_filepath(revision_dir, scene)
                         if imagepath:
-                            revision_images += [image.copy_compressed(imagepath, config.www_images_dir)]
+                            revision_images += [image.copy_compressed(imagepath, paths.www_images_dir)]
 
                     ref_median = statistics.median(revision_times[0]) if len(revision_times[0]) else 1.0
 
@@ -299,10 +300,10 @@ def export_all():
     diffs = {}
     tags = {}
 
-    revisions = sorted(os.listdir(config.logs_dir))
+    revisions = sorted(os.listdir(paths.logs_dir))
 
     for revision in revisions:
-        log_dir = os.path.join(config.logs_dir, revision)
+        log_dir = os.path.join(paths.logs_dir, revision)
         if os.path.isdir(log_dir):
             if revision_is_diff(revision):
                 # add D??? and the commit before it
@@ -314,16 +315,17 @@ def export_all():
                 revs = [rev for rev in revisions if rev.startswith(name)]
 
                 # ensure ci-something-ref is the first
-                refname = name + '-ref'
-                if refname in revs:
-                    revs.remove(refname)
-                    revs = [refname] + revs
+                for postfix in ['-ref', '-pre']:
+                    refname = name + postfix
+                    if refname in revs:
+                        revs.remove(refname)
+                        revs = [refname] + revs
 
                 tags[name] = revs
 
     export_master()
-    export_comparisons(diffs, config.diffs_json)
-    export_comparisons(tags, config.tags_json)
+    export_comparisons(diffs, paths.diffs_json)
+    export_comparisons(tags, paths.tags_json)
 
 if __name__ == "__main__":
     export_all()

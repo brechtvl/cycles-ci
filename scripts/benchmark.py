@@ -3,6 +3,7 @@
 import config
 import deploy
 import os
+import paths
 import shutil
 import statistics
 import sys
@@ -13,9 +14,9 @@ def update_blender(revision, log_dir):
     update_filepath = os.path.join(log_dir, 'update_' + revision + '.log')
     update_log = open(update_filepath, 'w')
 
-    util.run(['git', 'clean', '-f', '-d'], update_log, config.blender_dir)
-    util.run(['git', 'reset', '--hard', 'HEAD'], update_log, config.blender_dir)
-    util.run(['git', 'fetch', 'origin', 'master:master'], update_log, config.blender_dir)
+    util.run(['git', 'clean', '-f', '-d'], update_log, paths.blender_dir)
+    util.run(['git', 'reset', '--hard', 'HEAD'], update_log, paths.blender_dir)
+    util.run(['git', 'fetch', 'origin', 'master:master'], update_log, paths.blender_dir)
 
     if revision.startswith('D'):
         before = revision.endswith("~1")
@@ -23,14 +24,14 @@ def update_blender(revision, log_dir):
             revision = revision[:-2]
 
         branch_name = 'arcpatch-' + revision
-        util.run(['git', 'branch', '-D', branch_name], update_log, config.blender_dir, silent=True)
-        util.run(['arc', 'patch', '--force', revision], update_log, config.blender_dir)
+        util.run(['git', 'branch', '-D', branch_name], update_log, paths.blender_dir, silent=True)
+        util.run(['arc', 'patch', '--force', revision], update_log, paths.blender_dir)
         revision = branch_name
 
         if before:
             revision += "~1"
 
-    util.run(['git', 'checkout', revision], update_log, config.blender_dir)
+    util.run(['git', 'checkout', revision], update_log, paths.blender_dir)
 
     update_log.close()
 
@@ -38,14 +39,14 @@ def update_blender(revision, log_dir):
 def build_blender(revision, log_dir):
     build_filepath = os.path.join(log_dir, 'build_' + revision + '.log')
     build_log = open(build_filepath, "w")
-    util.run(['cmake', config.blender_dir], build_log, config.build_dir)
-    util.run(['make', '-j8', 'install'], build_log, config.build_dir)
+    util.run(['cmake', paths.blender_dir], build_log, paths.build_dir)
+    util.run(['make', '-j8', 'install'], build_log, paths.build_dir)
     build_log.close()
 
 # write description.log
 def write_description(log_dir):
     description_log = open(os.path.join(log_dir, 'description.log'), "w")
-    subject =  util.parse(['git', 'log', '-n1', '--format=%s'], config.blender_dir)
+    subject =  util.parse(['git', 'log', '-n1', '--format=%s'], paths.blender_dir)
     description_log.write(subject)
     description_log.close()
 
@@ -63,13 +64,13 @@ def write_failed(log_dir):
 
 # test if build is complete or failed
 def is_done(revision, device):
-    log_dir = os.path.join(config.logs_dir, revision, device['id'])
+    log_dir = os.path.join(paths.logs_dir, revision, device['id'])
     return os.path.isfile(os.path.join(log_dir, 'complete.log')) or \
            os.path.isfile(os.path.join(log_dir, 'failed.log'))
 
 # create log directory
 def create_log_dir(revision, device):
-    log_dir = os.path.join(config.logs_dir, revision, device['id'])
+    log_dir = os.path.join(paths.logs_dir, revision, device['id'])
     os.makedirs(log_dir, exist_ok=True)
 
     return log_dir
@@ -89,11 +90,11 @@ def compute_sample_factor(revision, device, scene):
         return 1.0
 
     new_revision = revision[:-len('-eqtime')]
-    new_log_dir = os.path.join(config.logs_dir, new_revision, device['id'])
+    new_log_dir = os.path.join(paths.logs_dir, new_revision, device['id'])
     new_time = get_median_render_time(new_log_dir, scene)
 
     ref_revision = '-'.join(revision.split('-')[:2]) + '-ref'
-    ref_log_dir = os.path.join(config.logs_dir, ref_revision, device['id'])
+    ref_log_dir = os.path.join(paths.logs_dir, ref_revision, device['id'])
     ref_time = get_median_render_time(ref_log_dir, scene)
 
     if not ref_time or not new_time:
@@ -104,7 +105,7 @@ def compute_sample_factor(revision, device, scene):
 # run benchmarks for each scene
 def benchmark(revision, log_dir, device):
     for run in range(0, device['runs']):
-        for scene, filename in sorted(config.scenes.items()):
+        for scene, filename in sorted(paths.scenes.items()):
             image = os.path.join(log_dir, scene + '_')
             image_ext = image + '0001.png'
 
@@ -115,8 +116,8 @@ def benchmark(revision, log_dir, device):
             sample_factor = device['sample_factor']
             sample_factor *= compute_sample_factor(revision, device, scene)
 
-            cmd = [config.blender_exe, '--debug-cycles', '-b', filename,
-                   '-P', os.path.join(config.scripts_dir, 'blender_setup.py'),
+            cmd = [paths.blender_exe, '--debug-cycles', '-b', filename,
+                   '-P', os.path.join(paths.scripts_dir, 'blender_setup.py'),
                    '-o', image, '-F', 'PNG', '-x', '1', '-f', '1',
                    '--', device['type'], str(device['tile_size']), str(sample_factor)]
 
@@ -176,30 +177,30 @@ def execute(revisions, force=False):
 # fetch tags from local remote and create corresponding directories
 def update_local_tags():
     # delete tags
-    old_tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
+    old_tags = util.parse(['git', 'tag'], cwd=paths.blender_dir).split('\n')
     for tag in old_tags:
         tag = tag.strip()
 
         if tag.startswith('ci-'):
-            util.run(['git', 'tag', '-d', tag], cwd=config.blender_dir)
+            util.run(['git', 'tag', '-d', tag], cwd=paths.blender_dir)
 
     # fetch tags
     try:
-        util.run(['git', 'fetch', '--tags', 'local'], cwd=config.blender_dir)
+        util.run(['git', 'fetch', '--tags', 'local'], cwd=paths.blender_dir)
     except util.RunException as e:
         return
 
     # detect tags
-    new_tags = util.parse(['git', 'tag'], cwd=config.blender_dir).split('\n')
+    new_tags = util.parse(['git', 'tag'], cwd=paths.blender_dir).split('\n')
     for tag in new_tags:
         tag = tag.strip()
 
         if tag.startswith('ci-'):
-            os.makedirs(os.path.join(config.logs_dir, tag), exist_ok=True)
+            os.makedirs(os.path.join(paths.logs_dir, tag), exist_ok=True)
 
     # remove logs from deleted tags
     for tag in old_tags:
         if tag not in new_tags:
-            tag_dir = os.path.join(config.logs_dir, tag)
+            tag_dir = os.path.join(paths.logs_dir, tag)
             if os.path.isdir(tag_dir):
                 shutil.rmtree(tag_dir)

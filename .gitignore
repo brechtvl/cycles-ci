@@ -5,10 +5,11 @@ __pycache__
 *.swp
 *.swo
 *#
-
 blender
 build
+lib
 logs
 scenes
+scripts/config.py
 www/images
 www/*.json
