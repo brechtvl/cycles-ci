@@ -9,7 +9,7 @@ device_type = argv[0]
 tile_size = int(argv[1])
 sample_factor = float(argv[2])
 
-prefs = bpy.context.user_preferences
+prefs = bpy.context.preferences
 scene = bpy.context.scene
 
 try:
@@ -18,15 +18,9 @@ try:
     else:
         cprefs = prefs.addons['cycles'].preferences
         cprefs.compute_device_type = device_type
-
-        cuda_devices, opencl_devices = cprefs.get_devices()
-        if device_type == 'CUDA':
-            devices = cuda_devices
-        else:
-            devices = opencl_devices
-
-        for device in devices:
-            device.use = device.type == device_type
+        for device in cprefs.devices:
+            if device.type == device_type:
+                device.use = device.type == device_type
 except:
     print("Cycles device not available")
     sys.exit(1)
