@@ -15,12 +15,21 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        http.server.SimpleHTTPRequestHandler.end_headers(self)
+
+class TCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
 def run_httpd(httpd):
     httpd.serve_forever()
 
 os.chdir(paths.www_dir)
 handler = HTTPRequestHandler
-httpd = socketserver.TCPServer(("", 4000), handler)
+httpd = TCPServer(("", 4000), handler)
 
 thread = threading.Thread(target=run_httpd, args=(httpd,))
 thread.daemon = True
